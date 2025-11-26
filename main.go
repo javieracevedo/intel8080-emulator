@@ -1,8 +1,28 @@
 package main
 
-import "fmt"
+import "8080/cpu"
+
+var testInstructions = []byte{
+	0x00,
+	0x40,
+	0x41,
+	0x42,
+	0x43,
+	0x44,
+	0x45,
+	0x46,
+	0x47,
+}
 
 func main() {
-	fmt.Println("Hello, Intel 8080!")
+
+	c := cpu.CPU{}
+
+	for _, v := range testInstructions {
+		c.Execute(v)
+	}
+
+	c.DebugRegisters()
 }
+
 
