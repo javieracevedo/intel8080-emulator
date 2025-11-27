@@ -15,7 +15,6 @@ var testInstructions = []byte{
 }
 
 func main() {
-
 	c := cpu.CPU{}
 
 	for _, v := range testInstructions {

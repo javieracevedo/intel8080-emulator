@@ -1,43 +1,6 @@
 package cpu
 import "fmt"
 
-func MOV_B_B() {
-	fmt.Println("DEBUG: called MOV_B_B")
-	REGISTERS[B] = REGISTERS[B] // this does nothing really
-}
-
-func MOV_B_C() {
-	fmt.Println("DEBUG: called MOV_B_C")
-	REGISTERS[B] = REGISTERS[C]
-}
-
-func MOV_B_D() {
-	fmt.Println("DEBUG: called MOV_B_D")
-	REGISTERS[B] = REGISTERS[D]
-}
-
-func MOV_B_E() {
-	fmt.Println("DEBUG: called MOV_B_E")
-	REGISTERS[B] = REGISTERS[E]
-}
-
-func MOV_B_H() {
-	fmt.Println("DEBUG: called MOV_B_H")
-	REGISTERS[B] = REGISTERS[H]
-}
-
-func MOV_B_L() {
-	fmt.Println("DEBUG: called MOV_B_L")
-	REGISTERS[B] = REGISTERS[L]
-}
-
-func MOV_B_A() {
-	fmt.Println("DEBUG: called MOV_B_A")
-	REGISTERS[B] = REGISTERS[A]
-}
-
-/*func MOV_B_M() { }*/ // To be implemented when memory is implemented
-
 func (c *CPU) Execute(op byte) {
 	switch op {
 	case 0x00:
@@ -57,6 +20,20 @@ func (c *CPU) Execute(op byte) {
 		MOV_B_L()
 	case 0x47:
 		MOV_B_A()
+	case 0x48:
+		MOV_C_B(); 
+	case 0x49:
+		MOV_C_C();
+	case 0x4A:
+		MOV_C_D();
+	case 0x4B:
+		MOV_C_E();
+	case 0x4C:
+		MOV_C_H();
+	case 0x4D:
+		MOV_C_L();
+	case 0x4F:
+		MOV_C_A();
 	default:
 		fmt.Printf("CPU->EXECUTE : OP CODE [%02X] NOT IMPLEMENTED\n", op)
 	}
