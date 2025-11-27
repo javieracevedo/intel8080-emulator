@@ -48,6 +48,20 @@ func (c *CPU) Execute(op byte) {
 		MOV_D_L()
 	case 0x57:
 		MOV_D_A()
+	case 0x58:
+		MOV_E_B()
+	case 0x59:
+		MOV_E_C()
+	case 0x5A:
+		MOV_E_D()
+	case 0x5B:
+		MOV_E_E()
+	case 0x5C:
+		MOV_E_H()
+	case 0x5D:
+		MOV_E_L()
+	case 0x5F:
+		MOV_E_A()
 	default:
 		fmt.Printf("CPU->EXECUTE : OP CODE [%02X] NOT IMPLEMENTED\n", op)
 	}

@@ -103,7 +103,43 @@ func MOV_D_L() {
 
 func MOV_D_A() {
 	fmt.Println("DEBUG: called MOV_D_A")
-	REGISTERS[D] = REGISTERS[A]
+	REGISTERS[E] = REGISTERS[A]
+}
+
+func MOV_E_A() {
+	fmt.Println("DEBUG: called MOV_E_A")
+	REGISTERS[E] = REGISTERS[A]
+}
+
+func MOV_E_B() {
+	fmt.Println("DEBUG: called MOV_E_A")
+	REGISTERS[E] = REGISTERS[B]
+}
+
+func MOV_E_C() {
+	fmt.Println("DEBUG: called MOV_E_A")
+	REGISTERS[E] = REGISTERS[C]
+}
+
+func MOV_E_D() {
+	fmt.Println("DEBUG: called MOV_E_A")
+	REGISTERS[E] = REGISTERS[D]
+}
+
+func MOV_E_E() {
+	fmt.Println("DEBUG: called MOV_E_A")
+	REGISTERS[E] = REGISTERS[E]
+}
+
+func MOV_E_H() {
+	fmt.Println("DEBUG: called MOV_E_A")
+	REGISTERS[E] = REGISTERS[H]
+}
+
+func MOV_E_L() {
+	fmt.Println("DEBUG: called MOV_E_A")
+	REGISTERS[E] = REGISTERS[L]
 }
 
 /*func MOV_B_M() { }*/ // To be implemented when memory is implemented
+
