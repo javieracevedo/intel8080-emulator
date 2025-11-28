@@ -7,61 +7,61 @@ func (c *CPU) Execute(op byte) {
 		fmt.Printf("CPU->EXECUTE : OP CODE [%02X] NO OP\n", op)
 	// MOVE INSTRUCTIONS
 	case 0x40:
-		MOV_B_B()
+		MOV(B, B)
 	case 0x41:
-		MOV_B_C()
+		MOV(B, C)
 	case 0x42:
-		MOV_B_D()
+		MOV(B, D)
 	case 0x43:
-		MOV_B_E()
+		MOV(B, E)
 	case 0x44:
-		MOV_B_H()
+		MOV(B, H)
 	case 0x45:
-		MOV_B_L()
+		MOV(B, L)
 	case 0x47:
-		MOV_B_A()
+		MOV(B, A)
 	case 0x48:
-		MOV_C_B()
+		MOV(C, B)
 	case 0x49:
-		MOV_C_C()
+		MOV(C, C)
 	case 0x4A:
-		MOV_C_D()
+		MOV(C, D)
 	case 0x4B:
-		MOV_C_E()
+		MOV(C, E)
 	case 0x4C:
-		MOV_C_H()
+		MOV(C, H)
 	case 0x4D:
-		MOV_C_L()
+		MOV(C, L)
 	case 0x4F:
-		MOV_C_A()
+		MOV(C, A)
 	case 0x50:
-		MOV_D_B()
+		MOV(D, B)
 	case 0x51:
-		MOV_D_C()
+		MOV(D, C)
 	case 0x52:
-		MOV_D_D()
+		MOV(D, D)
 	case 0x53:
-		MOV_D_E()
+		MOV(D, E)
 	case 0x54:
-		MOV_D_H()
+		MOV(D, H)
 	case 0x55:
-		MOV_D_L()
+		MOV(D, L)
 	case 0x57:
-		MOV_D_A()
+		MOV(D, A)
 	case 0x58:
-		MOV_E_B()
+		MOV(E, B)
 	case 0x59:
-		MOV_E_C()
+		MOV(E, C)
 	case 0x5A:
-		MOV_E_D()
+		MOV(E, D)
 	case 0x5B:
-		MOV_E_E()
+		MOV(E, E)
 	case 0x5C:
-		MOV_E_H()
+		MOV(E, H)
 	case 0x5D:
-		MOV_E_L()
+		MOV(E, H)
 	case 0x5F:
-		MOV_E_A()
+		MOV(E, A)
 	default:
 		fmt.Printf("CPU->EXECUTE : OP CODE [%02X] NOT IMPLEMENTED\n", op)
 	}
