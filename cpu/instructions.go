@@ -34,6 +34,8 @@ func (c *CPU) Execute(op byte) {
 		MOV(C, H)
 	case 0x4D:
 		MOV(C, L)
+	case 0x4E:
+		MOV_X_M(C)
 	case 0x4F:
 		MOV(C, A)
 	case 0x50:
@@ -48,6 +50,8 @@ func (c *CPU) Execute(op byte) {
 		MOV(D, H)
 	case 0x55:
 		MOV(D, L)
+	case 0x56:
+		MOV_X_M(D)
 	case 0x57:
 		MOV(D, A)
 	case 0x58:
@@ -62,6 +66,8 @@ func (c *CPU) Execute(op byte) {
 		MOV(E, H)
 	case 0x5D:
 		MOV(E, H)
+	case 0x5E:
+		MOV_X_M(E)
 	case 0x5F:
 		MOV(E, A)
 	case 0x60:
@@ -76,6 +82,8 @@ func (c *CPU) Execute(op byte) {
 		MOV(H, H)
 	case 0x65:
 		MOV(H, L)
+	case 0x66:
+		MOV_X_M(H)
 	case 0x67:
 		MOV(H, A)
 	case 0x68:
@@ -90,6 +98,8 @@ func (c *CPU) Execute(op byte) {
 		MOV(L, H)
 	case 0x6D:
 		MOV(L, L)
+	case 0x6E:
+		MOV_X_M(L)
 	case 0x6F:
 		MOV(L, A)
 	case 0x78:
@@ -104,6 +114,8 @@ func (c *CPU) Execute(op byte) {
 		MOV(A, H)
 	case 0x7D:
 		MOV(A, L)
+	case 0x7E:
+		MOV_X_M(A)
 	case 0x7F:
 		MOV(A, A)
 	default:
