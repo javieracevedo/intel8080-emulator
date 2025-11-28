@@ -19,3 +19,15 @@ func MOV_X_M(x Reg) {
 	REGISTERS[x] = value
 }
 
+func MOV_M_X(x Reg) {
+	MSB := REGISTERS[H]
+	LSB := REGISTERS[L]
+	addr := (uint16(MSB) << 8) | uint16(LSB)
+
+	value := REGISTERS[x]
+
+	memory.MEMORY[addr] = value
+
+	fmt.Printf("MOV_M_X: %04X (addr: 0x%04X) <- %04X (register: %02X)\n", memory.MEMORY[addr], addr, value, x)
+}
+

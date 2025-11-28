@@ -102,6 +102,20 @@ func (c *CPU) Execute(op byte) {
 		MOV_X_M(L)
 	case 0x6F:
 		MOV(L, A)
+	case 0x70:
+		MOV_M_X(B)
+	case 0x71:
+		MOV_M_X(C)
+	case 0x72:
+		MOV_M_X(D)
+	case 0x73:
+		MOV_M_X(E)
+	case 0x74:
+		MOV_M_X(H)
+	case 0x75:
+		MOV_M_X(L)
+	case 0x77:
+		MOV_M_X(A)
 	case 0x78:
 		MOV(A, B)
 	case 0x79:
