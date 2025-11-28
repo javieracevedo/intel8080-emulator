@@ -18,6 +18,8 @@ func (c *CPU) Execute(op byte) {
 		MOV(B, H)
 	case 0x45:
 		MOV(B, L)
+	case 0x46:
+		MOV_X_M(B)
 	case 0x47:
 		MOV(B, A)
 	case 0x48:
