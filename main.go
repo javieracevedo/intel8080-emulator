@@ -1,6 +1,7 @@
 package main
 
 import "8080/cpu"
+import "fmt"
 
 var testInstructions = []byte{
 	0x00,
@@ -71,12 +72,15 @@ var testInstructions = []byte{
 
 func main() {
 	c := cpu.CPU{}
+	c.Init()
 
 	for _, v := range testInstructions {
 		c.Execute(v)
 	}
 
 	c.DebugRegisters()
+
+	fmt.Printf("T-state Cycles Count: %d\n", c.CyclesCount)
 }
 
 
