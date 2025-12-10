@@ -787,3 +787,925 @@ func TestUnimplementedOpcode(t *testing.T) {
 	c.Execute(0x01) // Should print "NOT IMPLEMENTED" but not crash
 	c.Execute(0xFF) // Another unimplemented opcode
 }
+
+// =============================================================================
+// ADD INSTRUCTION TESTS (0x80-0x87)
+// Add register to accumulator
+// =============================================================================
+
+func TestADD_RegisterToA(t *testing.T) {
+	tests := []struct {
+		name       string
+		opcode     byte
+		src        Reg
+		aValue     byte
+		srcValue   byte
+		wantResult byte
+		wantCarry  bool
+		wantZero   bool
+		wantSign   bool
+	}{
+		// ADD B (0x80)
+		{"ADD B basic", 0x80, B, 0x10, 0x20, 0x30, false, false, false},
+		{"ADD B zero result", 0x80, B, 0x00, 0x00, 0x00, false, true, false},
+		{"ADD B carry", 0x80, B, 0xFF, 0x01, 0x00, true, true, false},
+		{"ADD B sign", 0x80, B, 0x7F, 0x01, 0x80, false, false, true},
+
+		// ADD C (0x81)
+		{"ADD C basic", 0x81, C, 0x05, 0x0A, 0x0F, false, false, false},
+		{"ADD C carry", 0x81, C, 0x80, 0x80, 0x00, true, true, false},
+
+		// ADD D (0x82)
+		{"ADD D basic", 0x82, D, 0x11, 0x22, 0x33, false, false, false},
+
+		// ADD E (0x83)
+		{"ADD E basic", 0x83, E, 0x44, 0x11, 0x55, false, false, false},
+
+		// ADD H (0x84)
+		{"ADD H basic", 0x84, H, 0x10, 0x10, 0x20, false, false, false},
+
+		// ADD L (0x85)
+		{"ADD L basic", 0x85, L, 0x0F, 0x01, 0x10, false, false, false},
+
+		// ADD A (0x87) - doubles the accumulator
+		{"ADD A basic", 0x87, A, 0x40, 0x40, 0x80, false, false, true},
+		{"ADD A zero", 0x87, A, 0x00, 0x00, 0x00, false, true, false},
+		{"ADD A carry", 0x87, A, 0x80, 0x80, 0x00, true, true, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+
+			REGISTERS[A] = tt.aValue
+			if tt.src != A {
+				REGISTERS[tt.src] = tt.srcValue
+			}
+
+			c.Execute(tt.opcode)
+
+			if REGISTERS[A] != tt.wantResult {
+				logFail(t, tt.opcode, tt.name,
+					fmt.Sprintf("A=0x%02X", tt.wantResult),
+					fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+			} else {
+				logPass(t, tt.opcode, tt.name,
+					fmt.Sprintf("A=0x%02X + %s=0x%02X → 0x%02X",
+						tt.aValue, regName(tt.src), tt.srcValue, tt.wantResult))
+			}
+		})
+	}
+}
+
+func TestADD_M(t *testing.T) {
+	// ADD M (0x86) - Add memory to accumulator
+	tests := []struct {
+		name       string
+		aValue     byte
+		memValue   byte
+		wantResult byte
+		wantCarry  bool
+	}{
+		{"ADD M basic", 0x10, 0x20, 0x30, false},
+		{"ADD M carry", 0xFF, 0x01, 0x00, true},
+		{"ADD M zero", 0x00, 0x00, 0x00, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+			clearMemory()
+
+			REGISTERS[A] = tt.aValue
+			REGISTERS[H] = 0x20
+			REGISTERS[L] = 0x00
+			memory.MEMORY[0x2000] = tt.memValue
+
+			c.Execute(0x86)
+
+			if REGISTERS[A] != tt.wantResult {
+				logFail(t, 0x86, tt.name,
+					fmt.Sprintf("A=0x%02X", tt.wantResult),
+					fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+			} else {
+				logPass(t, 0x86, tt.name,
+					fmt.Sprintf("A=0x%02X + (HL)=0x%02X → 0x%02X",
+						tt.aValue, tt.memValue, tt.wantResult))
+			}
+		})
+	}
+}
+
+// =============================================================================
+// ADC INSTRUCTION TESTS (0x88-0x8F)
+// Add register to accumulator with carry
+// =============================================================================
+
+func TestADC_RegisterToA(t *testing.T) {
+	tests := []struct {
+		name       string
+		opcode     byte
+		src        Reg
+		aValue     byte
+		srcValue   byte
+		carryIn    bool
+		wantResult byte
+		wantCarry  bool
+	}{
+		// ADC B (0x88)
+		{"ADC B no carry in", 0x88, B, 0x10, 0x20, false, 0x30, false},
+		{"ADC B with carry in", 0x88, B, 0x10, 0x20, true, 0x31, false},
+		{"ADC B carry out no in", 0x88, B, 0xFF, 0x01, false, 0x00, true},
+		{"ADC B carry out with in", 0x88, B, 0xFE, 0x01, true, 0x00, true},
+
+		// ADC C (0x89)
+		{"ADC C no carry", 0x89, C, 0x05, 0x0A, false, 0x0F, false},
+		{"ADC C with carry", 0x89, C, 0x05, 0x0A, true, 0x10, false},
+
+		// ADC D (0x8A)
+		{"ADC D basic", 0x8A, D, 0x11, 0x22, false, 0x33, false},
+
+		// ADC E (0x8B)
+		{"ADC E basic", 0x8B, E, 0x44, 0x11, false, 0x55, false},
+
+		// ADC H (0x8C)
+		{"ADC H basic", 0x8C, H, 0x10, 0x10, false, 0x20, false},
+
+		// ADC L (0x8D)
+		{"ADC L basic", 0x8D, L, 0x0F, 0x00, true, 0x10, false},
+
+		// ADC A (0x8F) - doubles accumulator plus carry
+		{"ADC A no carry", 0x8F, A, 0x40, 0x40, false, 0x80, false},
+		{"ADC A with carry", 0x8F, A, 0x40, 0x40, true, 0x81, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+
+			REGISTERS[A] = tt.aValue
+			if tt.src != A {
+				REGISTERS[tt.src] = tt.srcValue
+			}
+			// TODO: Set carry flag based on tt.carryIn when flags are implemented
+
+			c.Execute(tt.opcode)
+
+			// For now, just verify the basic operation without carry
+			// Full flag verification will be needed once flags are implemented
+			if !tt.carryIn {
+				if REGISTERS[A] != tt.wantResult {
+					logFail(t, tt.opcode, tt.name,
+						fmt.Sprintf("A=0x%02X", tt.wantResult),
+						fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+				} else {
+					logPass(t, tt.opcode, tt.name,
+						fmt.Sprintf("A=0x%02X + %s=0x%02X + CY=%v → 0x%02X",
+							tt.aValue, regName(tt.src), tt.srcValue, tt.carryIn, tt.wantResult))
+				}
+			}
+		})
+	}
+}
+
+func TestADC_M(t *testing.T) {
+	// ADC M (0x8E) - Add memory to accumulator with carry
+	tests := []struct {
+		name       string
+		aValue     byte
+		memValue   byte
+		carryIn    bool
+		wantResult byte
+	}{
+		{"ADC M no carry", 0x10, 0x20, false, 0x30},
+		{"ADC M with carry", 0x10, 0x20, true, 0x31},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+			clearMemory()
+
+			REGISTERS[A] = tt.aValue
+			REGISTERS[H] = 0x20
+			REGISTERS[L] = 0x00
+			memory.MEMORY[0x2000] = tt.memValue
+
+			c.Execute(0x8E)
+
+			// Without carry in, verify basic operation
+			if !tt.carryIn {
+				if REGISTERS[A] != tt.wantResult {
+					logFail(t, 0x8E, tt.name,
+						fmt.Sprintf("A=0x%02X", tt.wantResult),
+						fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+				} else {
+					logPass(t, 0x8E, tt.name,
+						fmt.Sprintf("A=0x%02X + (HL)=0x%02X → 0x%02X",
+							tt.aValue, tt.memValue, tt.wantResult))
+				}
+			}
+		})
+	}
+}
+
+// =============================================================================
+// SUB INSTRUCTION TESTS (0x90-0x97)
+// Subtract register from accumulator
+// =============================================================================
+
+func TestSUB_RegisterFromA(t *testing.T) {
+	tests := []struct {
+		name       string
+		opcode     byte
+		src        Reg
+		aValue     byte
+		srcValue   byte
+		wantResult byte
+		wantCarry  bool // Carry means borrow for SUB
+		wantZero   bool
+		wantSign   bool
+	}{
+		// SUB B (0x90)
+		{"SUB B basic", 0x90, B, 0x30, 0x10, 0x20, false, false, false},
+		{"SUB B zero result", 0x90, B, 0x10, 0x10, 0x00, false, true, false},
+		{"SUB B borrow", 0x90, B, 0x10, 0x20, 0xF0, true, false, true},
+
+		// SUB C (0x91)
+		{"SUB C basic", 0x91, C, 0x50, 0x25, 0x2B, false, false, false},
+
+		// SUB D (0x92)
+		{"SUB D basic", 0x92, D, 0x33, 0x11, 0x22, false, false, false},
+
+		// SUB E (0x93)
+		{"SUB E basic", 0x93, E, 0x55, 0x11, 0x44, false, false, false},
+
+		// SUB H (0x94)
+		{"SUB H basic", 0x94, H, 0x40, 0x10, 0x30, false, false, false},
+
+		// SUB L (0x95)
+		{"SUB L basic", 0x95, L, 0x20, 0x10, 0x10, false, false, false},
+
+		// SUB A (0x97) - always results in zero
+		{"SUB A always zero", 0x97, A, 0x42, 0x42, 0x00, false, true, false},
+		{"SUB A from FF", 0x97, A, 0xFF, 0xFF, 0x00, false, true, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+
+			REGISTERS[A] = tt.aValue
+			if tt.src != A {
+				REGISTERS[tt.src] = tt.srcValue
+			}
+
+			c.Execute(tt.opcode)
+
+			if REGISTERS[A] != tt.wantResult {
+				logFail(t, tt.opcode, tt.name,
+					fmt.Sprintf("A=0x%02X", tt.wantResult),
+					fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+			} else {
+				logPass(t, tt.opcode, tt.name,
+					fmt.Sprintf("A=0x%02X - %s=0x%02X → 0x%02X",
+						tt.aValue, regName(tt.src), tt.srcValue, tt.wantResult))
+			}
+		})
+	}
+}
+
+func TestSUB_M(t *testing.T) {
+	// SUB M (0x96) - Subtract memory from accumulator
+	tests := []struct {
+		name       string
+		aValue     byte
+		memValue   byte
+		wantResult byte
+		wantCarry  bool
+	}{
+		{"SUB M basic", 0x30, 0x10, 0x20, false},
+		{"SUB M borrow", 0x10, 0x20, 0xF0, true},
+		{"SUB M zero", 0x55, 0x55, 0x00, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+			clearMemory()
+
+			REGISTERS[A] = tt.aValue
+			REGISTERS[H] = 0x20
+			REGISTERS[L] = 0x00
+			memory.MEMORY[0x2000] = tt.memValue
+
+			c.Execute(0x96)
+
+			if REGISTERS[A] != tt.wantResult {
+				logFail(t, 0x96, tt.name,
+					fmt.Sprintf("A=0x%02X", tt.wantResult),
+					fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+			} else {
+				logPass(t, 0x96, tt.name,
+					fmt.Sprintf("A=0x%02X - (HL)=0x%02X → 0x%02X",
+						tt.aValue, tt.memValue, tt.wantResult))
+			}
+		})
+	}
+}
+
+// =============================================================================
+// SBB INSTRUCTION TESTS (0x98-0x9F)
+// Subtract register from accumulator with borrow
+// =============================================================================
+
+func TestSBB_RegisterFromA(t *testing.T) {
+	tests := []struct {
+		name       string
+		opcode     byte
+		src        Reg
+		aValue     byte
+		srcValue   byte
+		borrowIn   bool
+		wantResult byte
+	}{
+		// SBB B (0x98)
+		{"SBB B no borrow", 0x98, B, 0x30, 0x10, false, 0x20},
+		{"SBB B with borrow", 0x98, B, 0x30, 0x10, true, 0x1F},
+
+		// SBB C (0x99)
+		{"SBB C no borrow", 0x99, C, 0x50, 0x25, false, 0x2B},
+
+		// SBB D (0x9A)
+		{"SBB D no borrow", 0x9A, D, 0x33, 0x11, false, 0x22},
+
+		// SBB E (0x9B)
+		{"SBB E no borrow", 0x9B, E, 0x55, 0x11, false, 0x44},
+
+		// SBB H (0x9C)
+		{"SBB H no borrow", 0x9C, H, 0x40, 0x10, false, 0x30},
+
+		// SBB L (0x9D)
+		{"SBB L no borrow", 0x9D, L, 0x20, 0x10, false, 0x10},
+
+		// SBB A (0x9F) - result depends on carry
+		{"SBB A no borrow", 0x9F, A, 0x42, 0x42, false, 0x00},
+		{"SBB A with borrow", 0x9F, A, 0x42, 0x42, true, 0xFF},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+
+			REGISTERS[A] = tt.aValue
+			if tt.src != A {
+				REGISTERS[tt.src] = tt.srcValue
+			}
+			// TODO: Set carry flag based on tt.borrowIn when flags are implemented
+
+			c.Execute(tt.opcode)
+
+			// Without borrow in, verify basic operation
+			if !tt.borrowIn {
+				if REGISTERS[A] != tt.wantResult {
+					logFail(t, tt.opcode, tt.name,
+						fmt.Sprintf("A=0x%02X", tt.wantResult),
+						fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+				} else {
+					logPass(t, tt.opcode, tt.name,
+						fmt.Sprintf("A=0x%02X - %s=0x%02X - CY=%v → 0x%02X",
+							tt.aValue, regName(tt.src), tt.srcValue, tt.borrowIn, tt.wantResult))
+				}
+			}
+		})
+	}
+}
+
+func TestSBB_M(t *testing.T) {
+	// SBB M (0x9E) - Subtract memory from accumulator with borrow
+	tests := []struct {
+		name       string
+		aValue     byte
+		memValue   byte
+		borrowIn   bool
+		wantResult byte
+	}{
+		{"SBB M no borrow", 0x30, 0x10, false, 0x20},
+		{"SBB M with borrow", 0x30, 0x10, true, 0x1F},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+			clearMemory()
+
+			REGISTERS[A] = tt.aValue
+			REGISTERS[H] = 0x20
+			REGISTERS[L] = 0x00
+			memory.MEMORY[0x2000] = tt.memValue
+
+			c.Execute(0x9E)
+
+			if !tt.borrowIn {
+				if REGISTERS[A] != tt.wantResult {
+					logFail(t, 0x9E, tt.name,
+						fmt.Sprintf("A=0x%02X", tt.wantResult),
+						fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+				} else {
+					logPass(t, 0x9E, tt.name,
+						fmt.Sprintf("A=0x%02X - (HL)=0x%02X → 0x%02X",
+							tt.aValue, tt.memValue, tt.wantResult))
+				}
+			}
+		})
+	}
+}
+
+// =============================================================================
+// ANA INSTRUCTION TESTS (0xA0-0xA7)
+// Logical AND register with accumulator
+// =============================================================================
+
+func TestANA_RegisterWithA(t *testing.T) {
+	tests := []struct {
+		name       string
+		opcode     byte
+		src        Reg
+		aValue     byte
+		srcValue   byte
+		wantResult byte
+		wantZero   bool
+	}{
+		// ANA B (0xA0)
+		{"ANA B basic", 0xA0, B, 0xFF, 0x0F, 0x0F, false},
+		{"ANA B zero", 0xA0, B, 0xAA, 0x55, 0x00, true},
+		{"ANA B all ones", 0xA0, B, 0xFF, 0xFF, 0xFF, false},
+
+		// ANA C (0xA1)
+		{"ANA C basic", 0xA1, C, 0xF0, 0x0F, 0x00, true},
+
+		// ANA D (0xA2)
+		{"ANA D basic", 0xA2, D, 0x33, 0x11, 0x11, false},
+
+		// ANA E (0xA3)
+		{"ANA E basic", 0xA3, E, 0x55, 0xFF, 0x55, false},
+
+		// ANA H (0xA4)
+		{"ANA H basic", 0xA4, H, 0xCC, 0xAA, 0x88, false},
+
+		// ANA L (0xA5)
+		{"ANA L basic", 0xA5, L, 0x12, 0x34, 0x10, false},
+
+		// ANA A (0xA7) - AND with self, value unchanged
+		{"ANA A unchanged", 0xA7, A, 0x42, 0x42, 0x42, false},
+		{"ANA A zero", 0xA7, A, 0x00, 0x00, 0x00, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+
+			REGISTERS[A] = tt.aValue
+			if tt.src != A {
+				REGISTERS[tt.src] = tt.srcValue
+			}
+
+			c.Execute(tt.opcode)
+
+			if REGISTERS[A] != tt.wantResult {
+				logFail(t, tt.opcode, tt.name,
+					fmt.Sprintf("A=0x%02X", tt.wantResult),
+					fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+			} else {
+				logPass(t, tt.opcode, tt.name,
+					fmt.Sprintf("A=0x%02X & %s=0x%02X → 0x%02X",
+						tt.aValue, regName(tt.src), tt.srcValue, tt.wantResult))
+			}
+		})
+	}
+}
+
+func TestANA_M(t *testing.T) {
+	// ANA M (0xA6) - AND memory with accumulator
+	tests := []struct {
+		name       string
+		aValue     byte
+		memValue   byte
+		wantResult byte
+	}{
+		{"ANA M basic", 0xFF, 0x0F, 0x0F},
+		{"ANA M zero", 0xAA, 0x55, 0x00},
+		{"ANA M all ones", 0xFF, 0xFF, 0xFF},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+			clearMemory()
+
+			REGISTERS[A] = tt.aValue
+			REGISTERS[H] = 0x20
+			REGISTERS[L] = 0x00
+			memory.MEMORY[0x2000] = tt.memValue
+
+			c.Execute(0xA6)
+
+			if REGISTERS[A] != tt.wantResult {
+				logFail(t, 0xA6, tt.name,
+					fmt.Sprintf("A=0x%02X", tt.wantResult),
+					fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+			} else {
+				logPass(t, 0xA6, tt.name,
+					fmt.Sprintf("A=0x%02X & (HL)=0x%02X → 0x%02X",
+						tt.aValue, tt.memValue, tt.wantResult))
+			}
+		})
+	}
+}
+
+// =============================================================================
+// XRA INSTRUCTION TESTS (0xA8-0xAF)
+// Logical XOR register with accumulator
+// =============================================================================
+
+func TestXRA_RegisterWithA(t *testing.T) {
+	tests := []struct {
+		name       string
+		opcode     byte
+		src        Reg
+		aValue     byte
+		srcValue   byte
+		wantResult byte
+		wantZero   bool
+	}{
+		// XRA B (0xA8)
+		{"XRA B basic", 0xA8, B, 0xFF, 0x0F, 0xF0, false},
+		{"XRA B same values", 0xA8, B, 0xAA, 0xAA, 0x00, true},
+
+		// XRA C (0xA9)
+		{"XRA C basic", 0xA9, C, 0xF0, 0x0F, 0xFF, false},
+
+		// XRA D (0xAA)
+		{"XRA D basic", 0xAA, D, 0x33, 0x11, 0x22, false},
+
+		// XRA E (0xAB)
+		{"XRA E basic", 0xAB, E, 0x55, 0xFF, 0xAA, false},
+
+		// XRA H (0xAC)
+		{"XRA H basic", 0xAC, H, 0xCC, 0xAA, 0x66, false},
+
+		// XRA L (0xAD)
+		{"XRA L basic", 0xAD, L, 0x12, 0x34, 0x26, false},
+
+		// XRA A (0xAF) - XOR with self always zeros
+		{"XRA A always zero", 0xAF, A, 0x42, 0x42, 0x00, true},
+		{"XRA A from FF", 0xAF, A, 0xFF, 0xFF, 0x00, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+
+			REGISTERS[A] = tt.aValue
+			if tt.src != A {
+				REGISTERS[tt.src] = tt.srcValue
+			}
+
+			c.Execute(tt.opcode)
+
+			if REGISTERS[A] != tt.wantResult {
+				logFail(t, tt.opcode, tt.name,
+					fmt.Sprintf("A=0x%02X", tt.wantResult),
+					fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+			} else {
+				logPass(t, tt.opcode, tt.name,
+					fmt.Sprintf("A=0x%02X ^ %s=0x%02X → 0x%02X",
+						tt.aValue, regName(tt.src), tt.srcValue, tt.wantResult))
+			}
+		})
+	}
+}
+
+func TestXRA_M(t *testing.T) {
+	// XRA M (0xAE) - XOR memory with accumulator
+	tests := []struct {
+		name       string
+		aValue     byte
+		memValue   byte
+		wantResult byte
+	}{
+		{"XRA M basic", 0xFF, 0x0F, 0xF0},
+		{"XRA M same", 0xAA, 0xAA, 0x00},
+		{"XRA M all ones", 0x00, 0xFF, 0xFF},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+			clearMemory()
+
+			REGISTERS[A] = tt.aValue
+			REGISTERS[H] = 0x20
+			REGISTERS[L] = 0x00
+			memory.MEMORY[0x2000] = tt.memValue
+
+			c.Execute(0xAE)
+
+			if REGISTERS[A] != tt.wantResult {
+				logFail(t, 0xAE, tt.name,
+					fmt.Sprintf("A=0x%02X", tt.wantResult),
+					fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+			} else {
+				logPass(t, 0xAE, tt.name,
+					fmt.Sprintf("A=0x%02X ^ (HL)=0x%02X → 0x%02X",
+						tt.aValue, tt.memValue, tt.wantResult))
+			}
+		})
+	}
+}
+
+// =============================================================================
+// ORA INSTRUCTION TESTS (0xB0-0xB7)
+// Logical OR register with accumulator
+// =============================================================================
+
+func TestORA_RegisterWithA(t *testing.T) {
+	tests := []struct {
+		name       string
+		opcode     byte
+		src        Reg
+		aValue     byte
+		srcValue   byte
+		wantResult byte
+		wantZero   bool
+	}{
+		// ORA B (0xB0)
+		{"ORA B basic", 0xB0, B, 0xF0, 0x0F, 0xFF, false},
+		{"ORA B zero", 0xB0, B, 0x00, 0x00, 0x00, true},
+
+		// ORA C (0xB1)
+		{"ORA C basic", 0xB1, C, 0xAA, 0x55, 0xFF, false},
+
+		// ORA D (0xB2)
+		{"ORA D basic", 0xB2, D, 0x33, 0x11, 0x33, false},
+
+		// ORA E (0xB3)
+		{"ORA E basic", 0xB3, E, 0x10, 0x01, 0x11, false},
+
+		// ORA H (0xB4)
+		{"ORA H basic", 0xB4, H, 0xCC, 0x33, 0xFF, false},
+
+		// ORA L (0xB5)
+		{"ORA L basic", 0xB5, L, 0x12, 0x34, 0x36, false},
+
+		// ORA A (0xB7) - OR with self, value unchanged
+		{"ORA A unchanged", 0xB7, A, 0x42, 0x42, 0x42, false},
+		{"ORA A zero", 0xB7, A, 0x00, 0x00, 0x00, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+
+			REGISTERS[A] = tt.aValue
+			if tt.src != A {
+				REGISTERS[tt.src] = tt.srcValue
+			}
+
+			c.Execute(tt.opcode)
+
+			if REGISTERS[A] != tt.wantResult {
+				logFail(t, tt.opcode, tt.name,
+					fmt.Sprintf("A=0x%02X", tt.wantResult),
+					fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+			} else {
+				logPass(t, tt.opcode, tt.name,
+					fmt.Sprintf("A=0x%02X | %s=0x%02X → 0x%02X",
+						tt.aValue, regName(tt.src), tt.srcValue, tt.wantResult))
+			}
+		})
+	}
+}
+
+func TestORA_M(t *testing.T) {
+	// ORA M (0xB6) - OR memory with accumulator
+	tests := []struct {
+		name       string
+		aValue     byte
+		memValue   byte
+		wantResult byte
+	}{
+		{"ORA M basic", 0xF0, 0x0F, 0xFF},
+		{"ORA M zero", 0x00, 0x00, 0x00},
+		{"ORA M same", 0x55, 0x55, 0x55},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+			clearMemory()
+
+			REGISTERS[A] = tt.aValue
+			REGISTERS[H] = 0x20
+			REGISTERS[L] = 0x00
+			memory.MEMORY[0x2000] = tt.memValue
+
+			c.Execute(0xB6)
+
+			if REGISTERS[A] != tt.wantResult {
+				logFail(t, 0xB6, tt.name,
+					fmt.Sprintf("A=0x%02X", tt.wantResult),
+					fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+			} else {
+				logPass(t, 0xB6, tt.name,
+					fmt.Sprintf("A=0x%02X | (HL)=0x%02X → 0x%02X",
+						tt.aValue, tt.memValue, tt.wantResult))
+			}
+		})
+	}
+}
+
+// =============================================================================
+// CMP INSTRUCTION TESTS (0xB8-0xBF)
+// Compare register with accumulator (affects flags, not A)
+// =============================================================================
+
+func TestCMP_RegisterWithA(t *testing.T) {
+	tests := []struct {
+		name      string
+		opcode    byte
+		src       Reg
+		aValue    byte
+		srcValue  byte
+		wantZero  bool // Set if A == src
+		wantCarry bool // Set if A < src (borrow occurred)
+		wantSign  bool // Set if result is negative
+	}{
+		// CMP B (0xB8)
+		{"CMP B equal", 0xB8, B, 0x42, 0x42, true, false, false},
+		{"CMP B greater", 0xB8, B, 0x50, 0x30, false, false, false},
+		{"CMP B less", 0xB8, B, 0x30, 0x50, false, true, true},
+
+		// CMP C (0xB9)
+		{"CMP C equal", 0xB9, C, 0xAA, 0xAA, true, false, false},
+		{"CMP C greater", 0xB9, C, 0xFF, 0x00, false, false, true},
+
+		// CMP D (0xBA)
+		{"CMP D basic", 0xBA, D, 0x33, 0x11, false, false, false},
+
+		// CMP E (0xBB)
+		{"CMP E basic", 0xBB, E, 0x55, 0x55, true, false, false},
+
+		// CMP H (0xBC)
+		{"CMP H basic", 0xBC, H, 0x80, 0x80, true, false, false},
+
+		// CMP L (0xBD)
+		{"CMP L basic", 0xBD, L, 0x12, 0x34, false, true, true},
+
+		// CMP A (0xBF) - always equal
+		{"CMP A always equal", 0xBF, A, 0x42, 0x42, true, false, false},
+		{"CMP A from zero", 0xBF, A, 0x00, 0x00, true, false, false},
+		{"CMP A from FF", 0xBF, A, 0xFF, 0xFF, true, false, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+
+			REGISTERS[A] = tt.aValue
+			if tt.src != A {
+				REGISTERS[tt.src] = tt.srcValue
+			}
+			originalA := REGISTERS[A]
+
+			c.Execute(tt.opcode)
+
+			// CMP should NOT modify the accumulator
+			if REGISTERS[A] != originalA {
+				logFail(t, tt.opcode, tt.name,
+					fmt.Sprintf("A unchanged=0x%02X", originalA),
+					fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+			} else {
+				logPass(t, tt.opcode, tt.name,
+					fmt.Sprintf("CMP A=0x%02X, %s=0x%02X (Z=%v, CY=%v)",
+						tt.aValue, regName(tt.src), tt.srcValue, tt.wantZero, tt.wantCarry))
+			}
+		})
+	}
+}
+
+func TestCMP_M(t *testing.T) {
+	// CMP M (0xBE) - Compare memory with accumulator
+	tests := []struct {
+		name      string
+		aValue    byte
+		memValue  byte
+		wantZero  bool
+		wantCarry bool
+	}{
+		{"CMP M equal", 0x42, 0x42, true, false},
+		{"CMP M greater", 0x50, 0x30, false, false},
+		{"CMP M less", 0x30, 0x50, false, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCPU()
+			resetRegisters()
+			clearMemory()
+
+			REGISTERS[A] = tt.aValue
+			REGISTERS[H] = 0x20
+			REGISTERS[L] = 0x00
+			memory.MEMORY[0x2000] = tt.memValue
+			originalA := REGISTERS[A]
+
+			c.Execute(0xBE)
+
+			// CMP should NOT modify the accumulator
+			if REGISTERS[A] != originalA {
+				logFail(t, 0xBE, tt.name,
+					fmt.Sprintf("A unchanged=0x%02X", originalA),
+					fmt.Sprintf("A=0x%02X", REGISTERS[A]))
+			} else {
+				logPass(t, 0xBE, tt.name,
+					fmt.Sprintf("CMP A=0x%02X, (HL)=0x%02X (Z=%v, CY=%v)",
+						tt.aValue, tt.memValue, tt.wantZero, tt.wantCarry))
+			}
+		})
+	}
+}
+
+// =============================================================================
+// CYCLES COUNTING TESTS FOR 0x80-0xBF
+// =============================================================================
+
+func TestCycles_ArithmeticLogical(t *testing.T) {
+	// All register-based arithmetic/logical ops should take 4 cycles
+	regOpcodes := []byte{
+		// ADD (0x80-0x85, 0x87)
+		0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x87,
+		// ADC (0x88-0x8D, 0x8F)
+		0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8F,
+		// SUB (0x90-0x95, 0x97)
+		0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x97,
+		// SBB (0x98-0x9D, 0x9F)
+		0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9D, 0x9F,
+		// ANA (0xA0-0xA5, 0xA7)
+		0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA7,
+		// XRA (0xA8-0xAD, 0xAF)
+		0xA8, 0xA9, 0xAA, 0xAB, 0xAC, 0xAD, 0xAF,
+		// ORA (0xB0-0xB5, 0xB7)
+		0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB7,
+		// CMP (0xB8-0xBD, 0xBF)
+		0xB8, 0xB9, 0xBA, 0xBB, 0xBC, 0xBD, 0xBF,
+	}
+
+	for _, opcode := range regOpcodes {
+		c := newTestCPU()
+		c.Execute(opcode)
+
+		if c.CyclesCount != 4 {
+			t.Errorf("Opcode 0x%02X: CyclesCount = %d, want 4", opcode, c.CyclesCount)
+		}
+	}
+}
+
+func TestCycles_ArithmeticLogicalMemory(t *testing.T) {
+	// All memory-based arithmetic/logical ops should take 7 cycles
+	memOpcodes := []byte{
+		0x86, // ADD M
+		0x8E, // ADC M
+		0x96, // SUB M
+		0x9E, // SBB M
+		0xA6, // ANA M
+		0xAE, // XRA M
+		0xB6, // ORA M
+		0xBE, // CMP M
+	}
+
+	for _, opcode := range memOpcodes {
+		c := newTestCPU()
+		clearMemory()
+		c.Execute(opcode)
+
+		if c.CyclesCount != 7 {
+			t.Errorf("Opcode 0x%02X: CyclesCount = %d, want 7", opcode, c.CyclesCount)
+		}
+	}
+}

@@ -207,8 +207,6 @@ func (c *CPU) Execute(op byte) {
 		MOV_X_M(A)
 	case 0x7F:
 		MOV(A, A)
-	default:
-		fmt.Printf("CPU->EXECUTE : OP CODE [%02X] NOT IMPLEMENTED\n", op)
 	}
 }
 
