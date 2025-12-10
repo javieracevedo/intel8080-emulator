@@ -1,6 +1,6 @@
 package cpu
-import "fmt"
 
+import "fmt"
 
 func (c *CPU) Init() {
 	c.CyclesCount = 0
@@ -76,12 +76,10 @@ func (c *CPU) Init() {
 }
 
 func (c *CPU) Execute(op byte) {
-	REGISTERS = [7]byte{ 1, 2, 3, 4, 5, 6, 7 } // setting the registers on every op code exec to make sure no instruction breaks the code for now
-
 	c.CyclesCount += uint(c.CYCLES_TABLE[op])
 	switch op {
 	case 0x00:
-		fmt.Printf("CPU->EXECUTE : OP CODE [%02X] NO OP\n", op)
+		// NOP - no operation
 	// MOVE INSTRUCTIONS
 	case 0x40:
 		MOV(B, B)
@@ -142,7 +140,7 @@ func (c *CPU) Execute(op byte) {
 	case 0x5C:
 		MOV(E, H)
 	case 0x5D:
-		MOV(E, H)
+		MOV(E, L)
 	case 0x5E:
 		MOV_X_M(E)
 	case 0x5F:
@@ -219,4 +217,3 @@ func (c *CPU) DebugRegisters() {
 		fmt.Printf("%s: %02X\n", REGISTERS_NAMES[i], v)
 	}
 }
-
