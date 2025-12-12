@@ -49,6 +49,14 @@ func resetRegisters() {
 	}
 }
 
+// Helper function to reset flags to known values
+func resetFlags() {
+	// Reset all flags to 0
+	for i := range FLAGS {
+		FLAGS[i] = 0
+	}
+}
+
 // Helper function to clear memory
 func clearMemory() {
 	for i := range memory.MEMORY {
@@ -795,48 +803,51 @@ func TestUnimplementedOpcode(t *testing.T) {
 
 func TestADD_RegisterToA(t *testing.T) {
 	tests := []struct {
-		name       string
-		opcode     byte
-		src        Reg
-		aValue     byte
-		srcValue   byte
-		wantResult byte
-		wantCarry  bool
-		wantZero   bool
-		wantSign   bool
+		name         string
+		opcode       byte
+		src          Reg
+		aValue       byte
+		srcValue     byte
+		wantResult   byte
+		wantCarry    bool
+		wantAuxCarry bool
+		wantZero     bool
+		wantSign     bool
 	}{
 		// ADD B (0x80)
-		{"ADD B basic", 0x80, B, 0x10, 0x20, 0x30, false, false, false},
-		{"ADD B zero result", 0x80, B, 0x00, 0x00, 0x00, false, true, false},
-		{"ADD B carry", 0x80, B, 0xFF, 0x01, 0x00, true, true, false},
-		{"ADD B sign", 0x80, B, 0x7F, 0x01, 0x80, false, false, true},
+		{"ADD B basic", 0x80, B, 0x10, 0x20, 0x30, false, false, false, false},
+		{"ADD B zero result", 0x80, B, 0x00, 0x00, 0x00, false, false, true, false},
+		{"ADD B carry", 0x80, B, 0xFF, 0x01, 0x00, true, true, true, false},
+		{"ADD B sign", 0x80, B, 0x7F, 0x01, 0x80, false, true, false, true},
+		{"ADD B aux carry", 0x80, B, 0x0F, 0x01, 0x10, false, true, false, false},
 
 		// ADD C (0x81)
-		{"ADD C basic", 0x81, C, 0x05, 0x0A, 0x0F, false, false, false},
-		{"ADD C carry", 0x81, C, 0x80, 0x80, 0x00, true, true, false},
+		{"ADD C basic", 0x81, C, 0x05, 0x0A, 0x0F, false, false, false, false},
+		{"ADD C carry", 0x81, C, 0x80, 0x80, 0x00, true, false, true, false},
 
 		// ADD D (0x82)
-		{"ADD D basic", 0x82, D, 0x11, 0x22, 0x33, false, false, false},
+		{"ADD D basic", 0x82, D, 0x11, 0x22, 0x33, false, false, false, false},
 
 		// ADD E (0x83)
-		{"ADD E basic", 0x83, E, 0x44, 0x11, 0x55, false, false, false},
+		{"ADD E basic", 0x83, E, 0x44, 0x11, 0x55, false, false, false, false},
 
 		// ADD H (0x84)
-		{"ADD H basic", 0x84, H, 0x10, 0x10, 0x20, false, false, false},
+		{"ADD H basic", 0x84, H, 0x10, 0x10, 0x20, false, false, false, false},
 
 		// ADD L (0x85)
-		{"ADD L basic", 0x85, L, 0x0F, 0x01, 0x10, false, false, false},
+		{"ADD L basic", 0x85, L, 0x0F, 0x01, 0x10, false, true, false, false},
 
 		// ADD A (0x87) - doubles the accumulator
-		{"ADD A basic", 0x87, A, 0x40, 0x40, 0x80, false, false, true},
-		{"ADD A zero", 0x87, A, 0x00, 0x00, 0x00, false, true, false},
-		{"ADD A carry", 0x87, A, 0x80, 0x80, 0x00, true, true, false},
+		{"ADD A basic", 0x87, A, 0x40, 0x40, 0x80, false, false, false, true},
+		{"ADD A zero", 0x87, A, 0x00, 0x00, 0x00, false, false, true, false},
+		{"ADD A carry", 0x87, A, 0x80, 0x80, 0x00, true, false, true, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := newTestCPU()
 			resetRegisters()
+			resetFlags()
 
 			REGISTERS[A] = tt.aValue
 			if tt.src != A {
@@ -845,14 +856,66 @@ func TestADD_RegisterToA(t *testing.T) {
 
 			c.Execute(tt.opcode)
 
+			passed := true
 			if REGISTERS[A] != tt.wantResult {
 				logFail(t, tt.opcode, tt.name,
 					fmt.Sprintf("A=0x%02X", tt.wantResult),
 					fmt.Sprintf("A=0x%02X", REGISTERS[A]))
-			} else {
+				passed = false
+			}
+
+			// Verify Zero flag
+			wantZeroFlag := byte(0)
+			if tt.wantZero {
+				wantZeroFlag = 1
+			}
+			if FLAGS[F_Z] != wantZeroFlag {
+				logFail(t, tt.opcode, tt.name,
+					fmt.Sprintf("Z=%d", wantZeroFlag),
+					fmt.Sprintf("Z=%d", FLAGS[F_Z]))
+				passed = false
+			}
+
+			// Verify Carry flag
+			wantCarryFlag := byte(0)
+			if tt.wantCarry {
+				wantCarryFlag = 1
+			}
+			if FLAGS[F_C] != wantCarryFlag {
+				logFail(t, tt.opcode, tt.name,
+					fmt.Sprintf("C=%d", wantCarryFlag),
+					fmt.Sprintf("C=%d", FLAGS[F_C]))
+				passed = false
+			}
+
+			// Verify Auxiliary Carry flag
+			wantAuxCarryFlag := byte(0)
+			if tt.wantAuxCarry {
+				wantAuxCarryFlag = 1
+			}
+			if FLAGS[F_A] != wantAuxCarryFlag {
+				logFail(t, tt.opcode, tt.name,
+					fmt.Sprintf("AC=%d", wantAuxCarryFlag),
+					fmt.Sprintf("AC=%d", FLAGS[F_A]))
+				passed = false
+			}
+
+			// Verify Sign flag
+			wantSignFlag := byte(0)
+			if tt.wantSign {
+				wantSignFlag = 1
+			}
+			if FLAGS[F_S] != wantSignFlag {
+				logFail(t, tt.opcode, tt.name,
+					fmt.Sprintf("S=%d", wantSignFlag),
+					fmt.Sprintf("S=%d", FLAGS[F_S]))
+				passed = false
+			}
+
+			if passed {
 				logPass(t, tt.opcode, tt.name,
-					fmt.Sprintf("A=0x%02X + %s=0x%02X → 0x%02X",
-						tt.aValue, regName(tt.src), tt.srcValue, tt.wantResult))
+					fmt.Sprintf("A=0x%02X + %s=0x%02X → 0x%02X, Z=%d C=%d AC=%d S=%d",
+						tt.aValue, regName(tt.src), tt.srcValue, tt.wantResult, FLAGS[F_Z], FLAGS[F_C], FLAGS[F_A], FLAGS[F_S]))
 			}
 		})
 	}
