@@ -27,20 +27,15 @@ func MOV_M_X(x Reg) {
 func ADD_X(x Reg) {
 	result := REGISTERS[A] + REGISTERS[x]
 
-	if (result != 0) {
-		FLAGS[F_Z] = 0
-	} else {
+	if (result == 0) {
 		FLAGS[F_Z] = 1
+	} else {
+		FLAGS[F_Z] = 0
 	}
 
-	msb := (result >> 7) & 1
-	if (msb == 1) {
-		FLAGS[F_S] = 1
-		FLAGS[F_A] = 1
-	} else {
-		FLAGS[F_S] = 0
-		FLAGS[F_A] = 0
-	}
+	msb := (result >> 7) & 1 // If the MSB is 1, then the result is a negative number
+	FLAGS[F_S] = msb
+	FLAGS[F_A] = msb
 
 	REGISTERS[A] = result 
 }
