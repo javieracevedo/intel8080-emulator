@@ -41,7 +41,7 @@ func (c *CPU) Init() {
 
 		0x60: 5,
 		0x61: 5,
-		0x62: 5,
+	0x62: 5,
 		0x63: 5,
 		0x64: 5,
 		0x65: 5,
@@ -207,6 +207,8 @@ func (c *CPU) Execute(op byte) {
 		MOV_X_M(A)
 	case 0x7F:
 		MOV(A, A)
+	case 0x80:
+		ADD_X(B)
 	}
 }
 
