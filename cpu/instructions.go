@@ -209,6 +209,8 @@ func (c *CPU) Execute(op byte) {
 		MOV(A, A)
 	case 0x80:
 		ADD_X(B)
+	case 0x81:
+		ADD_X(C)
 	}
 }
 

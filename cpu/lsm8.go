@@ -27,7 +27,7 @@ func MOV_M_X(x Reg) {
 func ADD_X(x Reg) {
 	result := REGISTERS[A] + REGISTERS[x]
 
-	if (result == 0) {
+	if result == 0 {
 		FLAGS[F_Z] = 1
 	} else {
 		FLAGS[F_Z] = 0
@@ -35,7 +35,13 @@ func ADD_X(x Reg) {
 
 	msb := (result >> 7) & 1 // If the MSB is 1, then the result is a negative number
 	FLAGS[F_S] = msb
-	FLAGS[F_A] = msb
 
-	REGISTERS[A] = result 
+	overflow := result < REGISTERS[x]
+	if overflow {
+		FLAGS[F_C] = 1
+	} else {
+		FLAGS[F_C] = 0
+	}
+
+	REGISTERS[A] = result
 }
