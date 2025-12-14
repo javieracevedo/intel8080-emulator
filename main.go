@@ -1,73 +1,75 @@
 package main
 
-import "8080/cpu"
-import "fmt"
+import (
+	"8080/cpu"
+	"fmt"
+)
 
 var testInstructions = []byte{
-	0x00,
-	0x40,
-	0x41,
-	0x42,
-	0x43,
-	0x44,
-	0x45,
-	0x46,
-	0x47,
-	0x48,
-	0x49,
-	0x4A,
-	0x4B,
-	0x4C,
-	0x4D,
-	0x4E,
-	0x4F,
-	0x50,
-	0x51,
-	0x52,
-	0x53,
-	0x54,
-	0x55,
-	0x56,
-	0x57,
-	0x58,
-	0x59,
-	0x5A,
-	0x5B,
-	0x5C,
-	0x5D,
-	0x5E,
-	0x5F,
-	0x60,
-	0x61,
-	0x62,
-	0x63,
-	0x64,
-	0x65,
-	0x66,
-	0x67,
-	0x68,
-	0x69,
-	0x6A,
-	0x6B,
-	0x6C,
-	0x6D,
-	0x6E,
-	0x6F,
-	0x78,
-	0x79,
-	0x7A,
-	0x7B,
-	0x7C,
-	0x7D,
-	0x7E,
-	0x7F,
-	0x70,
-	0x71,
-	0x72,
-	0x73,
-	0x74,
-	0x75,
-	0x77,
+	0b00000000, // NOP
+	0b01000000, // MOV B,B
+	0b01000001, // MOV B,C
+	0b01000010, // MOV B,D
+	0b01000011, // MOV B,E
+	0b01000100, // MOV B,H
+	0b01000101, // MOV B,L
+	0b01000110, // MOV B,M
+	0b01000111, // MOV B,A
+	0b01001000, // MOV C,B
+	0b01001001, // MOV C,C
+	0b01001010, // MOV C,D
+	0b01001011, // MOV C,E
+	0b01001100, // MOV C,H
+	0b01001101, // MOV C,L
+	0b01001110, // MOV C,M
+	0b01001111, // MOV C,A
+	0b01010000, // MOV D,B
+	0b01010001, // MOV D,C
+	0b01010010, // MOV D,D
+	0b01010011, // MOV D,E
+	0b01010100, // MOV D,H
+	0b01010101, // MOV D,L
+	0b01010110, // MOV D,M
+	0b01010111, // MOV D,A
+	0b01011000, // MOV E,B
+	0b01011001, // MOV E,C
+	0b01011010, // MOV E,D
+	0b01011011, // MOV E,E
+	0b01011100, // MOV E,H
+	0b01011101, // MOV E,L
+	0b01011110, // MOV E,M
+	0b01011111, // MOV E,A
+	0b01100000, // MOV H,B
+	0b01100001, // MOV H,C
+	0b01100010, // MOV H,D
+	0b01100011, // MOV H,E
+	0b01100100, // MOV H,H
+	0b01100101, // MOV H,L
+	0b01100110, // MOV H,M
+	0b01100111, // MOV H,A
+	0b01101000, // MOV L,B
+	0b01101001, // MOV L,C
+	0b01101010, // MOV L,D
+	0b01101011, // MOV L,E
+	0b01101100, // MOV L,H
+	0b01101101, // MOV L,L
+	0b01101110, // MOV L,M
+	0b01101111, // MOV L,A
+	0b01111000, // MOV A,B
+	0b01111001, // MOV A,C
+	0b01111010, // MOV A,D
+	0b01111011, // MOV A,E
+	0b01111100, // MOV A,H
+	0b01111101, // MOV A,L
+	0b01111110, // MOV A,M
+	0b01111111, // MOV A,A
+	0b01110000, // MOV M,B
+	0b01110001, // MOV M,C
+	0b01110010, // MOV M,D
+	0b01110011, // MOV M,E
+	0b01110100, // MOV M,H
+	0b01110101, // MOV M,L
+	0b01110111, // MOV M,A
 }
 
 func main() {
@@ -82,5 +84,3 @@ func main() {
 
 	fmt.Printf("T-state Cycles Count: %d\n", c.CyclesCount)
 }
-
-
