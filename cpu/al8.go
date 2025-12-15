@@ -3,39 +3,40 @@ package cpu
 func ADD_X(x Reg) {
 	sum := REGISTERS[A] + REGISTERS[x]
 
+	// Carry flag: check if result overflows 8 bits
 	sum_16b := uint16(REGISTERS[A]) + uint16(REGISTERS[x])
-	carry := (sum_16b%0x100)&0x100 != 0
-	if carry {
-		FLAGS[CY] = 1
+	if sum_16b > 0xFF {
+		SetFlag(CY)
 	} else {
-		FLAGS[CY] = 0
+		ClearFlag(CY)
 	}
 
-	auxiliary_carry := ((REGISTERS[A] & 0x0F) + (REGISTERS[x] & 0x0F)) > 0x0F
-	if auxiliary_carry {
-		FLAGS[AC] = 1
+	// Auxiliary carry: carry from bit 3 to bit 4
+	if ((REGISTERS[A] & 0x0F) + (REGISTERS[x] & 0x0F)) > 0x0F {
+		SetFlag(AC)
 	} else {
-		FLAGS[AC] = 0
+		ClearFlag(AC)
 	}
 
+	// Zero flag: set if result is zero
 	if sum == 0 {
-		FLAGS[Z] = 1
+		SetFlag(Z)
 	} else {
-		FLAGS[Z] = 0
+		ClearFlag(Z)
 	}
 
-	sign_bit := (sum & 0x80)
-	if sign_bit == 1 {
-		FLAGS[S] = 1
+	// Sign flag: set if bit 7 of result is set
+	if (sum & 0x80) != 0 {
+		SetFlag(S)
 	} else {
-		FLAGS[S] = 0
+		ClearFlag(S)
 	}
 
-	has_parity := parity8(sum)
-	if has_parity {
-		FLAGS[P] = 1
+	// Parity flag: set if result has even parity
+	if parity8(sum) {
+		SetFlag(P)
 	} else {
-		FLAGS[P] = 0
+		ClearFlag(P)
 	}
 
 	REGISTERS[A] = sum
