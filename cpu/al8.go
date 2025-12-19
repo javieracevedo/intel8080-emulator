@@ -1,45 +1,45 @@
 package cpu
 
-func ADD_X(x Reg) {
-	sum := REGISTERS[A] + REGISTERS[x]
+func (c *CPU) ADD_X(x Reg) {
+	sum := c.REGISTERS[A] + c.REGISTERS[x]
 
 	// Carry flag: check if result overflows 8 bits
-	sum_16b := uint16(REGISTERS[A]) + uint16(REGISTERS[x])
+	sum_16b := uint16(c.REGISTERS[A]) + uint16(c.REGISTERS[x])
 	if sum_16b > 0xFF {
-		SetFlag(CY)
+		c.SetFlag(CY)
 	} else {
-		ClearFlag(CY)
+		c.ClearFlag(CY)
 	}
 
 	// Auxiliary carry: carry from bit 3 to bit 4
-	if ((REGISTERS[A] & 0x0F) + (REGISTERS[x] & 0x0F)) > 0x0F {
-		SetFlag(AC)
+	if ((c.REGISTERS[A] & 0x0F) + (c.REGISTERS[x] & 0x0F)) > 0x0F {
+		c.SetFlag(AC)
 	} else {
-		ClearFlag(AC)
+		c.ClearFlag(AC)
 	}
 
 	// Zero flag: set if result is zero
 	if sum == 0 {
-		SetFlag(Z)
+		c.SetFlag(Z)
 	} else {
-		ClearFlag(Z)
+		c.ClearFlag(Z)
 	}
 
 	// Sign flag: set if bit 7 of result is set
 	if (sum & 0x80) != 0 {
-		SetFlag(S)
+		c.SetFlag(S)
 	} else {
-		ClearFlag(S)
+		c.ClearFlag(S)
 	}
 
 	// Parity flag: set if result has even parity
 	if parity8(sum) {
-		SetFlag(P)
+		c.SetFlag(P)
 	} else {
-		ClearFlag(P)
+		c.ClearFlag(P)
 	}
 
-	REGISTERS[A] = sum
+	c.REGISTERS[A] = sum
 }
 
 func parity8(x byte) bool {
