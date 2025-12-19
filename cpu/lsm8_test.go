@@ -76,9 +76,8 @@ func TestMOV(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c.Init(initialRegs)
 			t.Cleanup(func() {
-				c.Init()
+				c.Init(initialRegs)
 			})
 
 			c.MOV(tt.regLeft, tt.regRight)
@@ -91,9 +90,7 @@ func TestMOV(t *testing.T) {
 
 func TestMOV_X_M(t *testing.T) {
 	c := &CPU{}
-	c.Init()
-	c.REGISTERS[H] = 0x1
-	c.REGISTERS[L] = 0x1
+	c.Init([7]byte{0, 0, 0, 0, 0x1, 0x1, 0})
 	addr := uint16(0x0101)
 	memory.MEMORY[addr] = 0x2
 
@@ -117,9 +114,8 @@ func TestMOV_X_M(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c.Init([7]byte{0, 0, 0, 0, 0x1, 0x1, 0})
 			t.Cleanup(func() {
-				c.Init()
+				c.Init([7]byte{0, 0, 0, 0, 0x1, 0x1, 0})
 			})
 			c.MOV_X_M(tt.reg)
 			if c.REGISTERS[tt.reg] != 0x2 {

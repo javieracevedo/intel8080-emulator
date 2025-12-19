@@ -25,9 +25,8 @@ func TestADD_X(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c.Init(initialRegs)
 			t.Cleanup(func() {
-				c.Init()
+				c.Init(initialRegs)
 			})
 
 			c.ADD_X(tt.reg)
