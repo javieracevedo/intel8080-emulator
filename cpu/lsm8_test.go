@@ -120,8 +120,6 @@ func TestMOV_X_M(t *testing.T) {
 			c.Init([7]byte{0, 0, 0, 0, 0x1, 0x1, 0})
 			t.Cleanup(func() {
 				c.Init()
-				// Clearing memory is handled by the outer Cleanup,
-				// but we could also do it here for more granular isolation if needed.
 			})
 			c.MOV_X_M(tt.reg)
 			if c.REGISTERS[tt.reg] != 0x2 {
