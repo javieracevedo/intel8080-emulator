@@ -1,6 +1,7 @@
 package cpu
 
 import (
+	"8080/memory"
 	"testing"
 )
 
@@ -34,5 +35,29 @@ func TestADD_X(t *testing.T) {
 				t.Fatalf("got 0x%02X, want 0x%02X", c.REGISTERS[A], tt.want)
 			}
 		})
+	}
+}
+
+func TestADD_M_X(t *testing.T) {
+	c := &CPU{}
+	initialRegs := [7]byte{
+		B: 0xA,
+		H: 0xFF,
+		L: 0xFF,
+	}
+	c.Init(initialRegs)
+
+	addr := (uint16(initialRegs[H]) << 8) | uint16(initialRegs[L])
+	memory.MEMORY[addr] = 0x0A
+
+	t.Cleanup(func() {
+		memory.MEMORY[addr] = 0
+	})
+
+	c.ADD_M_X(B)
+
+	const want byte = 0x14
+	if got := c.REGISTERS[A]; got != want {
+		t.Fatalf("got 0x%02X, want 0x%02X", memory.MEMORY[addr], want)
 	}
 }

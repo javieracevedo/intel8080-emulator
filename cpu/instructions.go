@@ -137,5 +137,17 @@ func (c *CPU) Execute(op byte) {
 		c.ADD_X(B)
 	case 0x81:
 		c.ADD_X(C)
+	case 0x82:
+		c.ADD_X(D)
+	case 0x83:
+		c.ADD_X(E)
+	case 0x84:
+		c.ADD_X(H)
+	case 0x85:
+		c.ADD_X(L)
+	case 0x86:
+		c.ADD_M_X(A)
+	case 0x87:
+		c.ADD_X(A)
 	}
 }

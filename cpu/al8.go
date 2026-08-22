@@ -1,10 +1,36 @@
 package cpu
 
+import (
+	"8080/memory"
+)
+
 func (c *CPU) ADD_X(x Reg) {
 	sum := c.REGISTERS[A] + c.REGISTERS[x]
 
+	c.SetAddConditionFlags(c.REGISTERS[A], c.REGISTERS[B])
+
+	c.REGISTERS[A] = sum
+}
+
+func (c *CPU) ADD_M_X(x Reg) {
+	MSB := c.REGISTERS[H]
+	LSB := c.REGISTERS[L]
+	addr := (uint16(MSB) << 8) | uint16(LSB)
+	// TODO: add bounds check, and a test
+	if addr >= addr {
+
+	}
+
+	sum := c.REGISTERS[x] + memory.MEMORY[addr]
+
+	c.SetAddConditionFlags(c.REGISTERS[x], memory.MEMORY[addr])
+
+	c.REGISTERS[A] = sum
+}
+
+func (c *CPU) SetAddConditionFlags(a byte, b byte) {
 	// Carry flag: check if result overflows 8 bits
-	sum_16b := uint16(c.REGISTERS[A]) + uint16(c.REGISTERS[x])
+	sum_16b := uint16(a) + uint16(b)
 	if sum_16b > 0xFF {
 		c.SetFlag(CY)
 	} else {
@@ -12,34 +38,32 @@ func (c *CPU) ADD_X(x Reg) {
 	}
 
 	// Auxiliary carry: carry from bit 3 to bit 4
-	if ((c.REGISTERS[A] & 0x0F) + (c.REGISTERS[x] & 0x0F)) > 0x0F {
+	if ((a & 0x0F) + (b & 0x0F)) > 0x0F {
 		c.SetFlag(AC)
 	} else {
 		c.ClearFlag(AC)
 	}
 
 	// Zero flag: set if result is zero
-	if sum == 0 {
+	if sum_16b == 0 {
 		c.SetFlag(Z)
 	} else {
 		c.ClearFlag(Z)
 	}
 
 	// Sign flag: set if bit 7 of result is set
-	if (sum & 0x80) != 0 {
+	if (sum_16b & 0x80) != 0 {
 		c.SetFlag(S)
 	} else {
 		c.ClearFlag(S)
 	}
 
 	// Parity flag: set if result has even parity
-	if parity8(sum) {
+	if parity8(byte(sum_16b)) {
 		c.SetFlag(P)
 	} else {
 		c.ClearFlag(P)
 	}
-
-	c.REGISTERS[A] = sum
 }
 
 func parity8(x byte) bool {
