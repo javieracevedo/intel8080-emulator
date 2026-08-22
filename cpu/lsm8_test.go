@@ -95,7 +95,7 @@ func TestMOV_X_M(t *testing.T) {
 	memory.MEMORY[addr] = 0x2
 
 	t.Cleanup(func() {
-		memory.MEMORY = [64 * 1014]byte{}
+		memory.MEMORY = [64 * 1024]byte{}
 	})
 
 	var tests = []struct {
