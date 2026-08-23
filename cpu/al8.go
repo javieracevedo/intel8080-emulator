@@ -30,7 +30,7 @@ func (c *CPU) ADC_X(x Reg) {
 		carry = 1
 	}
 
-	var ab_sum byte = c.REGISTERS[A] + c.REGISTERS[B]
+	var ab_sum byte = c.REGISTERS[A] + c.REGISTERS[x]
 	c.REGISTERS[A] = ab_sum + carry
 
 	c.SetAddConditionFlags(ab_sum, carry)
