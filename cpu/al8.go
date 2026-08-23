@@ -15,17 +15,25 @@ func (c *CPU) ADD_X(x Reg) {
 func (c *CPU) ADD_M_X(x Reg) {
 	MSB := c.REGISTERS[H]
 	LSB := c.REGISTERS[L]
-	addr := (uint16(MSB) << 8) | uint16(LSB)
-	// TODO: add bounds check, and a test
-	if addr >= addr {
-
-	}
+	var addr uint16 = (uint16(MSB) << 8) | uint16(LSB)
 
 	sum := c.REGISTERS[x] + memory.MEMORY[addr]
 
 	c.SetAddConditionFlags(c.REGISTERS[x], memory.MEMORY[addr])
 
 	c.REGISTERS[A] = sum
+}
+
+func (c *CPU) ADC_X(x Reg) {
+	var carry byte
+	if c.IsSet(CY) {
+		carry = 1
+	}
+
+	var ab_sum byte = c.REGISTERS[A] + c.REGISTERS[B]
+	c.REGISTERS[A] = ab_sum + carry
+
+	c.SetAddConditionFlags(ab_sum, carry)
 }
 
 func (c *CPU) SetAddConditionFlags(a byte, b byte) {
@@ -45,7 +53,7 @@ func (c *CPU) SetAddConditionFlags(a byte, b byte) {
 	}
 
 	// Zero flag: set if result is zero
-	if sum_16b == 0 {
+	if byte(sum_16b) == 0 {
 		c.SetFlag(Z)
 	} else {
 		c.ClearFlag(Z)
