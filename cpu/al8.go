@@ -7,7 +7,7 @@ import (
 func (c *CPU) ADD_X(x Reg) {
 	sum := c.REGISTERS[A] + c.REGISTERS[x]
 
-	c.SetAddConditionFlags(c.REGISTERS[A], c.REGISTERS[B])
+	c.SetAddConditionFlags(c.REGISTERS[A], c.REGISTERS[B], 0)
 
 	c.REGISTERS[A] = sum
 }
@@ -19,26 +19,32 @@ func (c *CPU) ADD_M_X(x Reg) {
 
 	sum := c.REGISTERS[x] + memory.MEMORY[addr]
 
-	c.SetAddConditionFlags(c.REGISTERS[x], memory.MEMORY[addr])
+	c.SetAddConditionFlags(c.REGISTERS[x], memory.MEMORY[addr], 0)
 
 	c.REGISTERS[A] = sum
 }
 
 func (c *CPU) ADC_X(x Reg) {
+	a := c.REGISTERS[A]
+	bx := c.REGISTERS[x]
+
 	var carry byte
 	if c.IsSet(CY) {
 		carry = 1
 	}
 
-	var ab_sum byte = c.REGISTERS[A] + c.REGISTERS[x]
-	c.REGISTERS[A] = ab_sum + carry
+	// TODO: think of a way of combining add condition flags and the actual sum. So
+	// we don't have to do the some twice.
+	sum := a + bx + carry
 
-	c.SetAddConditionFlags(ab_sum, carry)
+	c.SetAddConditionFlags(a, bx, carry)
+
+	c.REGISTERS[A] = sum
 }
 
-func (c *CPU) SetAddConditionFlags(a byte, b byte) {
+func (c *CPU) SetAddConditionFlags(a byte, b byte, carry byte) {
 	// Carry flag: check if result overflows 8 bits
-	sum_16b := uint16(a) + uint16(b)
+	sum_16b := uint16(a) + uint16(b) + uint16(carry)
 	if sum_16b > 0xFF {
 		c.SetFlag(CY)
 	} else {
@@ -46,7 +52,10 @@ func (c *CPU) SetAddConditionFlags(a byte, b byte) {
 	}
 
 	// Auxiliary carry: carry from bit 3 to bit 4
-	if ((a & 0x0F) + (b & 0x0F)) > 0x0F {
+	auxSum := uint16(a&0x0F) +
+		uint16(b&0x0F) +
+		uint16(carry)
+	if auxSum > 0x0F {
 		c.SetFlag(AC)
 	} else {
 		c.ClearFlag(AC)
