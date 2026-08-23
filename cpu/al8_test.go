@@ -47,7 +47,7 @@ func TestADD_M_X(t *testing.T) {
 	}
 	c.Init(initialRegs)
 
-	addr := (uint16(initialRegs[H]) << 8) | uint16(initialRegs[L])
+	var addr uint16 = (uint16(initialRegs[H]) << 8) | uint16(initialRegs[L])
 	memory.MEMORY[addr] = 0x0A
 
 	t.Cleanup(func() {
@@ -61,3 +61,130 @@ func TestADD_M_X(t *testing.T) {
 		t.Fatalf("got 0x%02X, want 0x%02X", memory.MEMORY[addr], want)
 	}
 }
+
+func TestADC_X_WithCarry_NoOverflow(t *testing.T) {
+	c := &CPU{}
+	initialRegs := [7]byte{
+		B: 0x5,
+		C: 0x5,
+		D: 0x5,
+		E: 0x5,
+		H: 0x5,
+		L: 0x5,
+		A: 0x5,
+	}
+	c.Init(initialRegs)
+
+	var tests = []struct {
+		name string
+		reg  Reg
+		want byte
+	}{
+		// With Carry Cases
+		{"ADC_B", B, c.REGISTERS[A] + c.REGISTERS[B] + 1},
+		{"ADC_C", C, c.REGISTERS[A] + c.REGISTERS[C] + 1},
+		{"ADC_D", D, c.REGISTERS[A] + c.REGISTERS[D] + 1},
+		{"ADC_E", E, c.REGISTERS[A] + c.REGISTERS[E] + 1},
+		{"ADC_H", H, c.REGISTERS[A] + c.REGISTERS[H] + 1},
+		{"ADC_L", L, c.REGISTERS[A] + c.REGISTERS[L] + 1},
+		{"ADC_A", A, c.REGISTERS[A] + c.REGISTERS[A] + 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Cleanup(func() {
+				c.Init(initialRegs)
+			})
+			c.SetFlag(CY)
+
+			c.ADC_X(tt.reg)
+
+			// TODO: look into putting this into a sub-test or some re-usable way. I suspect we'll have to 			// test flags like this quite a bit.
+			if c.IsSet(CY) {
+				t.Fatalf("CY flag should no be set")
+			}
+			if c.IsSet(Z) {
+				t.Fatalf("Z flag should not be set")
+			}
+			if c.IsSet(S) {
+				t.Fatalf("S flag should not be set")
+			}
+			if c.IsSet(P) {
+				t.Fatalf("P flag should not be set")
+			}
+			if c.IsSet(AC) {
+				t.Fatalf("AC flag should not be set")
+			}
+
+			if c.REGISTERS[A] != tt.want {
+				t.Fatalf("got 0x%02X, want 0x%02X", c.REGISTERS[A], tt.want)
+			}
+		})
+	}
+}
+
+func TestADC_X_WithCarryAndOverflow(t *testing.T) {
+	c := &CPU{}
+	initialRegs := [7]byte{
+		B: 0x1,
+		C: 0x1,
+		D: 0x1,
+		E: 0x1,
+		H: 0x1,
+		L: 0x1,
+		A: 0xFE,
+	}
+	c.Init(initialRegs)
+
+	var tests = []struct {
+		name string
+		reg  Reg
+		want byte
+	}{
+		// With Carry Cases
+		{"ADC_B", B, 0},
+		{"ADC_C", C, 0},
+		{"ADC_D", D, 0},
+		{"ADC_E", E, 0},
+		{"ADC_H", H, 0},
+		{"ADC_L", L, 0},
+		{"ADC_A", A, 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Cleanup(func() {
+				c.Init(initialRegs)
+			})
+			c.SetFlag(CY)
+
+			c.ADC_X(tt.reg)
+
+			if !c.IsSet(CY) {
+				t.Fatalf("CY flag should be set")
+			}
+			if !c.IsSet(Z) {
+				t.Fatalf("Z flag should be set")
+			}
+			if c.IsSet(S) {
+				t.Fatalf("S flag should not be set")
+			}
+			if !c.IsSet(P) {
+				t.Fatalf("P flag should be set")
+			}
+			if !c.IsSet(AC) {
+				t.Fatalf("AC flag should be set")
+			}
+
+			if c.REGISTERS[A] != tt.want {
+				t.Fatalf("got 0x%02X, want 0x%02X", c.REGISTERS[A], tt.want)
+			}
+		})
+	}
+}
+
+/*
+func TestADC_X_WithoutCarry(t *testing.T) {
+
+}
+*/
