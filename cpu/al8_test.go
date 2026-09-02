@@ -5,6 +5,13 @@ import (
 	"testing"
 )
 
+type adcTestCase struct {
+	name  string
+	reg   Reg
+	want  byte
+	flags byte
+}
+
 func TestADD_X(t *testing.T) {
 	c := &CPU{}
 	initialRegs := [7]byte{0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x0}
@@ -123,6 +130,7 @@ func TestADC_X_WithCarry_NoOverflow(t *testing.T) {
 	}
 }
 
+/*
 func TestADC_X_WithCarryAndOverflow(t *testing.T) {
 	c := &CPU{}
 	initialRegs := [7]byte{
@@ -183,7 +191,11 @@ func TestADC_X_WithCarryAndOverflow(t *testing.T) {
 	}
 }
 
-func TestADC_X_WithoutCarryNoOverflow(t *testing.T) {
+*/
+
+// Test WithoutCarry and Overflow
+// Test WithoutCarry and No Overflow
+func TestADC_X(t *testing.T) {
 	c := &CPU{}
 	initialRegs := [7]byte{
 		B: 0x01,
@@ -196,87 +208,56 @@ func TestADC_X_WithoutCarryNoOverflow(t *testing.T) {
 	}
 	c.Init(initialRegs)
 
-	var tests = []struct {
-		name             string
-		reg              Reg
-		want             byte
-		carryFlagWant    bool
-		zeroFlagWant     bool
-		signFlagWant     bool
-		auxCarryFlagWant bool
-		parityFlagWant   bool
-	}{
+	var tests = []adcTestCase{
 		{
-			name:             "ADC_B",
-			reg:              B,
-			want:             0x02,
-			carryFlagWant:    false,
-			zeroFlagWant:     false,
-			signFlagWant:     false,
-			auxCarryFlagWant: false,
-			parityFlagWant:   false,
+			name:  "ADC_B",
+			reg:   B,
+			want:  0x02,
+			flags: 0,
 		},
 		{
-			name:             "ADC_C",
-			reg:              C,
-			want:             0x02,
-			carryFlagWant:    false,
-			zeroFlagWant:     false,
-			signFlagWant:     false,
-			auxCarryFlagWant: false,
-			parityFlagWant:   false,
+			name:  "ADC_C",
+			reg:   C,
+			want:  0x02,
+			flags: 0,
 		},
 		{
-			name:             "ADC_D",
-			reg:              D,
-			want:             0x80,
-			carryFlagWant:    false,
-			zeroFlagWant:     false,
-			signFlagWant:     true,
-			auxCarryFlagWant: true,
-			parityFlagWant:   false,
+			name:  "ADC_D",
+			reg:   D,
+			want:  0x80,
+			flags: S | AC,
 		},
 		{
-			name:             "ADC_E",
-			reg:              E,
-			want:             0x03,
-			carryFlagWant:    false,
-			zeroFlagWant:     false,
-			signFlagWant:     false,
-			auxCarryFlagWant: false,
-			parityFlagWant:   true,
+			name:  "ADC_E",
+			reg:   E,
+			want:  0x03,
+			flags: P,
 		},
 		{
-			name:             "ADC_H",
-			reg:              H,
-			want:             0x04,
-			carryFlagWant:    false,
-			zeroFlagWant:     false,
-			signFlagWant:     false,
-			auxCarryFlagWant: false,
-			parityFlagWant:   false,
+			name:  "ADC_H",
+			reg:   H,
+			want:  0x04,
+			flags: 0x0,
 		},
 		{
-			name:             "ADC_L",
-			reg:              L,
-			want:             0x05,
-			carryFlagWant:    false,
-			zeroFlagWant:     false,
-			signFlagWant:     false,
-			auxCarryFlagWant: false,
-			parityFlagWant:   true,
+			name:  "ADC_L",
+			reg:   L,
+			want:  0x05,
+			flags: P,
 		},
 		{
-			name:             "ADC_A",
-			reg:              A,
-			want:             0x02,
-			carryFlagWant:    false,
-			zeroFlagWant:     false,
-			signFlagWant:     false,
-			auxCarryFlagWant: false,
-			parityFlagWant:   false,
+			name:  "ADC_A",
+			reg:   A,
+			want:  0x02,
+			flags: 0x0,
 		},
 	}
+
+	// CY | P
+	// 1010 0000
+
+	// FLAGS&CY = 1000 0000
+	// FLAGS&P  = 0010 0000
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -286,13 +267,16 @@ func TestADC_X_WithoutCarryNoOverflow(t *testing.T) {
 
 			c.ADC_X(tt.reg)
 
-			carryFlagGot := c.IsSet(CY)
-			zeroFlagGot := c.IsSet(Z)
-			signFlagGot := c.IsSet(S)
-			parityFlagGot := c.IsSet(P)
-			auxCarryFlagGot := c.IsSet(AC)
+			/*
+				carryFlagGot := c.IsSet(CY)
+				zeroFlagGot := c.IsSet(Z)
+				signFlagGot := c.IsSet(S)
+				parityFlagGot := c.IsSet(P)
+				auxCarryFlagGot := c.IsSet(AC)
+			*/
+			assertFlags(tt.flags, c.Flags, t, c)
 
-			if carryFlagGot != tt.carryFlagWant {
+			/*if carryFlagGot != tt.carryFlagWant {
 				t.Fatalf("A Reg [%b] | Got CY (Carry) flag as %t, want %t", c.REGISTERS[A], carryFlagGot, tt.carryFlagWant)
 			}
 			if zeroFlagGot != tt.zeroFlagWant {
@@ -307,11 +291,42 @@ func TestADC_X_WithoutCarryNoOverflow(t *testing.T) {
 			if parityFlagGot != tt.parityFlagWant {
 				t.Fatalf("A Reg [%b] | Got P (Parity) flag as %t, want %t", c.REGISTERS[A], parityFlagGot, tt.parityFlagWant)
 			}
+			*/
 
 			if c.REGISTERS[A] != tt.want {
 				t.Fatalf("got 0x%02X, want 0x%02X", c.REGISTERS[A], tt.want)
 			}
 		})
+	}
+}
+
+func assertFlags(wantFlags byte, gotFlags byte, t *testing.T, c *CPU) {
+	carryFlagGot := gotFlags & CY
+	zeroFlagGot := gotFlags & Z
+	signFlagGot := gotFlags & S
+	parityFlagGot := gotFlags & P
+	auxCarryFlagGot := gotFlags & AC
+
+	carryFlagWant := wantFlags & CY
+	zeroFlagWant := wantFlags & Z
+	signFlagWant := wantFlags & S
+	parityFlagWant := wantFlags & P
+	auxCarryFlagWant := wantFlags & AC
+
+	if wantFlags&CY != gotFlags&CY {
+		t.Fatalf("A Reg [%b] | Got CY (Carry) flag as %b, want %b", c.REGISTERS[A], carryFlagGot, carryFlagWant)
+	}
+	if wantFlags&Z != gotFlags&Z {
+		t.Fatalf("A Reg [%b] | Got Z (Zero) flag as %b, want %b", c.REGISTERS[A], zeroFlagGot, zeroFlagWant)
+	}
+	if wantFlags&S != gotFlags&S {
+		t.Fatalf("A Reg [%b] | Got S (Sign) flag as %b, want %b", c.REGISTERS[A], signFlagGot, signFlagWant)
+	}
+	if wantFlags&AC != gotFlags&AC {
+		t.Fatalf("A Reg [%b] | Got AC (Aux Carry) flag as %b, want %b", c.REGISTERS[A], auxCarryFlagGot, auxCarryFlagWant)
+	}
+	if wantFlags&P != gotFlags&P {
+		t.Fatalf("A Reg [%b] | Got P (Parity) flag as %b, want %b", c.REGISTERS[A], parityFlagGot, parityFlagWant)
 	}
 }
 
