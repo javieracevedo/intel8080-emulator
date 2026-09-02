@@ -6,10 +6,12 @@ import (
 )
 
 type adcTestCase struct {
-	name  string
-	reg   Reg
-	want  byte
-	flags byte
+	name          string
+	initialRegs   [7]byte
+	isCarryPreset bool
+	reg           Reg
+	want          byte
+	flags         byte
 }
 
 func TestADD_X(t *testing.T) {
@@ -130,69 +132,6 @@ func TestADC_X_WithCarry_NoOverflow(t *testing.T) {
 	}
 }
 
-/*
-func TestADC_X_WithCarryAndOverflow(t *testing.T) {
-	c := &CPU{}
-	initialRegs := [7]byte{
-		B: 0x1,
-		C: 0x1,
-		D: 0x1,
-		E: 0x1,
-		H: 0x1,
-		L: 0x1,
-		A: 0xFE,
-	}
-	c.Init(initialRegs)
-
-	var tests = []struct {
-		name string
-		reg  Reg
-		want byte
-	}{
-		// With Carry Cases
-		{"ADC_B", B, 0},
-		{"ADC_C", C, 0},
-		{"ADC_D", D, 0},
-		{"ADC_E", E, 0},
-		{"ADC_H", H, 0},
-		{"ADC_L", L, 0},
-		{"ADC_A", A, 0},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Cleanup(func() {
-				c.Init(initialRegs)
-			})
-			c.SetFlag(CY)
-
-			c.ADC_X(tt.reg)
-
-			if !c.IsSet(CY) {
-				t.Fatalf("CY flag should be set")
-			}
-			if !c.IsSet(Z) {
-				t.Fatalf("Z flag should be set")
-			}
-			if c.IsSet(S) {
-				t.Fatalf("S flag should not be set")
-			}
-			if !c.IsSet(P) {
-				t.Fatalf("P flag should be set")
-			}
-			if !c.IsSet(AC) {
-				t.Fatalf("AC flag should be set")
-			}
-
-			if c.REGISTERS[A] != tt.want {
-				t.Fatalf("got 0x%02X, want 0x%02X", c.REGISTERS[A], tt.want)
-			}
-		})
-	}
-}
-
-*/
-
 // Test WithoutCarry and Overflow
 // Test WithoutCarry and No Overflow
 func TestADC_X(t *testing.T) {
@@ -206,50 +145,121 @@ func TestADC_X(t *testing.T) {
 		L: 0x04,
 		A: 0x01,
 	}
-	c.Init(initialRegs)
+	withCarryAndOverflowRegs := [7]byte{
+		B: 0x01,
+		C: 0x01,
+		D: 0x01,
+		E: 0x01,
+		H: 0x01,
+		L: 0x01,
+		A: 0xFE,
+	}
 
 	var tests = []adcTestCase{
 		{
-			name:  "ADC_B",
-			reg:   B,
-			want:  0x02,
-			flags: 0,
+			name:        "WithoutCarry/ADC_B",
+			initialRegs: initialRegs,
+			reg:         B,
+			want:        0x02,
+			flags:       0,
 		},
 		{
-			name:  "ADC_C",
-			reg:   C,
-			want:  0x02,
-			flags: 0,
+			name:        "WithoutCarry/ADC_C",
+			initialRegs: initialRegs,
+			reg:         C,
+			want:        0x02,
+			flags:       0,
 		},
 		{
-			name:  "ADC_D",
-			reg:   D,
-			want:  0x80,
-			flags: S | AC,
+			name:        "WithoutCarry/ADC_D",
+			initialRegs: initialRegs,
+			reg:         D,
+			want:        0x80,
+			flags:       S | AC,
 		},
 		{
-			name:  "ADC_E",
-			reg:   E,
-			want:  0x03,
-			flags: P,
+			name:        "WithoutCarry/ADC_E",
+			initialRegs: initialRegs,
+			reg:         E,
+			want:        0x03,
+			flags:       P,
 		},
 		{
-			name:  "ADC_H",
-			reg:   H,
-			want:  0x04,
-			flags: 0x0,
+			name:        "WithoutCarry/ADC_H",
+			initialRegs: initialRegs,
+			reg:         H,
+			want:        0x04,
+			flags:       0x0,
 		},
 		{
-			name:  "ADC_L",
-			reg:   L,
-			want:  0x05,
-			flags: P,
+			name:        "WithoutCarry/ADC_L",
+			initialRegs: initialRegs,
+			reg:         L,
+			want:        0x05,
+			flags:       P,
 		},
 		{
-			name:  "ADC_A",
-			reg:   A,
-			want:  0x02,
-			flags: 0x0,
+			name:        "WithoutCarry/ADC_A",
+			initialRegs: initialRegs,
+			reg:         A,
+			want:        0x02,
+			flags:       0x0,
+		},
+		{
+			name:          "WithCarryAndOverflow/ADC_B",
+			initialRegs:   withCarryAndOverflowRegs,
+			isCarryPreset: true,
+			reg:           B,
+			want:          0x00,
+			flags:         CY | Z | P | AC,
+		},
+		{
+			name:          "WithCarryAndOverflow/ADC_C",
+			initialRegs:   withCarryAndOverflowRegs,
+			isCarryPreset: true,
+			reg:           C,
+			want:          0x00,
+			flags:         CY | Z | P | AC,
+		},
+		{
+			name:          "WithCarryAndOverflow/ADC_D",
+			initialRegs:   withCarryAndOverflowRegs,
+			isCarryPreset: true,
+			reg:           D,
+			want:          0x00,
+			flags:         CY | Z | P | AC,
+		},
+		{
+			name:          "WithCarryAndOverflow/ADC_E",
+			initialRegs:   withCarryAndOverflowRegs,
+			isCarryPreset: true,
+			reg:           E,
+			want:          0x00,
+			flags:         CY | Z | P | AC,
+		},
+		{
+			name:          "WithCarryAndOverflow/ADC_H",
+			initialRegs:   withCarryAndOverflowRegs,
+			isCarryPreset: true,
+			reg:           H,
+			want:          0x00,
+			flags:         CY | Z | P | AC,
+		},
+		{
+			name:          "WithCarryAndOverflow/ADC_L",
+			initialRegs:   withCarryAndOverflowRegs,
+			isCarryPreset: true,
+			reg:           L,
+			want:          0x00,
+			flags:         CY | Z | P | AC,
+		},
+		{
+			name:          "WithCarryAndOverflow/ADC_A",
+			initialRegs:   withCarryAndOverflowRegs,
+			isCarryPreset: true,
+			reg:           A,
+			want:          0xFD,
+			flags:         CY | S | AC,
 		},
 	}
 
@@ -261,9 +271,11 @@ func TestADC_X(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Cleanup(func() {
-				c.Init(initialRegs)
-			})
+			c.Init(tt.initialRegs)
+			c.Flags = 0
+			if tt.isCarryPreset {
+				c.SetFlag(CY)
+			}
 
 			c.ADC_X(tt.reg)
 
